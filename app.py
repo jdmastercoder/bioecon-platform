@@ -91,23 +91,30 @@ st.markdown("Integrated epidemiological modeling, financial risk estimation, and
 # ---------------------------------------------------------------------
 # SIDEBAR CONTROLS
 # ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# SIDEBAR CONTROLS
+# ---------------------------------------------------------------------
 st.sidebar.header("Epidemic Parameters (SEIR-H)")
 population = st.sidebar.number_input(
-    "Total Population", value=500000, step=10000)
-initial_cases = st.sidebar.number_input("Initial Cases", value=10, step=1)
+    "Total Population", value=500000, step=10000, key="main_population")
+initial_cases = st.sidebar.number_input(
+    "Initial Cases", value=10, step=1, key="main_initial_cases")
 transmission_rate = st.sidebar.slider(
-    "Transmission Rate (Beta)", 0.0, 1.0, 0.35, 0.01)
-incubation_days = st.sidebar.slider("Incubation Period (Days)", 1, 14, 5, 1)
-recovery_days = st.sidebar.slider("Recovery Period (Days)", 1, 30, 14, 1)
+    "Transmission Rate (Beta)", 0.0, 1.0, 0.35, 0.01, key="main_beta")
+incubation_days = st.sidebar.slider(
+    "Incubation Period (Days)", 1, 14, 5, 1, key="main_incubation")
+recovery_days = st.sidebar.slider(
+    "Recovery Period (Days)", 1, 30, 14, 1, key="main_recovery")
 hospitalization_rate = st.sidebar.slider(
-    "Hospitalization Rate (%)", 0.0, 20.0, 5.0, 0.5) / 100.0
+    "Hospitalization Rate (%)", 0.0, 20.0, 5.0, 0.5, key="main_hosp_rate") / 100.0
 
 st.sidebar.header("Resource Constraints")
 total_vaccines = st.sidebar.number_input(
-    "Available Vaccines", value=100000, step=5000)
-total_beds = st.sidebar.number_input("Available ICU Beds", value=500, step=50)
+    "Available Vaccines", value=100000, step=5000, key="main_vaccines")
+total_beds = st.sidebar.number_input(
+    "Available ICU Beds", value=500, step=50, key="main_beds")
 total_treatments = st.sidebar.number_input(
-    "Available Treatments", value=25000, step=1000)
+    "Available Treatments", value=25000, step=1000, key="main_treatments")
 
 # Create Navigation Tabs
 tab1, tab2 = st.tabs(["📊 Main Allocation Dashboard",
@@ -359,6 +366,7 @@ if result["success"]:
         data=csv_bytes,
         file_name="bioecon_resource_allocation_plan.csv",
         mime="text/csv"
+        key="main_dowload_btn"
     )
 if result["success"]:
     m = generate_resource_map(
