@@ -71,6 +71,6 @@ The **BioEcon Platform** bridges quantitative finance and computational biology 
 
 1. **Clone the Repository:**
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/bioecon-platform.git](https://github.com/YOUR_USERNAME/bioecon-platform.git)
+   git clone [https://github.com/jdmastercoder/bioecon-platform.git](https://github.com/jdmastercoder/bioecon-platform.git)
    cd bioecon-platform
    ```

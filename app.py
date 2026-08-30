@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import streamlit as st
 import matplotlib.pyplot as plt
-from health_engine import run_sir_model_advanced, fetch_disease_preset
+from health_engine import run_epidemic_simulation
 from finance_engine import run_monte_carlo_live
 from optimization_engine import optimize_resources
 from map_engine import generate_resource_map
@@ -18,25 +17,60 @@ st.markdown("A quantitative platform combining computational epidemiology, live 
 st.sidebar.header("Global Configuration")
 
 # Module 1 Sidebar Setup
-st.sidebar.subheader("Module 1: Disease Profile")
-disease_choice = st.sidebar.selectbox("Select Disease Preset", [
-                                      "COVID-19 (Original)", "Seasonal Influenza", "Measles", "Custom Scenario"])
-preset = fetch_disease_preset(disease_choice)
-
+# =====================================================================
+# MODULE 1: SIDEBAR INPUTS (Add incubation and hospitalization sliders)
+# =====================================================================
+# In your Sidebar:
+# --- SIDEBAR INPUTS ---
+disease_choice = st.sidebar.selectbox(
+    "Select Pathogen", ["COVID-19", "Influenza", "Custom"])
 population = st.sidebar.number_input(
-    "Target Population", value=100000, step=10000)
-if disease_choice == "Custom Scenario":
-    beta = st.sidebar.slider("Transmission Rate (Beta)",
-                             0.05, 1.50, preset["beta"])
-    gamma = st.sidebar.slider("Recovery Rate (Gamma)",
-                              0.01, 0.50, preset["gamma"])
-else:
-    beta = preset["beta"]
-    gamma = preset["gamma"]
-    st.sidebar.info(
-        f"**Est. R0:** {preset['r0']} | **Beta:** {beta} | **Gamma:** {gamma}")
+    "Total Population", value=500000, step=10000)
+initial_cases = st.sidebar.number_input("Initial Cases", value=10, step=1)
+transmission_rate = st.sidebar.slider(
+    "Transmission Rate (Beta)", 0.0, 1.0, 0.35, 0.01)
+incubation_days = st.sidebar.slider("Incubation Period (Days)", 1, 14, 5, 1)
+recovery_days = st.sidebar.slider("Recovery Period (Days)", 1, 30, 14, 1)
+hospitalization_rate = st.sidebar.slider(
+    "Hospitalization Rate (%)", 0.0, 20.0, 5.0, 0.5) / 100.0
+days = 90
 
-days = st.sidebar.slider("Simulation Horizon (Days)", 30, 365, 120)
+# In Module 1 Execution:
+# --- MODULE 1 EXECUTION ---
+# Create columns first so col1 exists
+col1, col2, col3 = st.columns(3)
+
+# Module 1 Execution
+with col1:
+    st.subheader(f"Outbreak Dynamics: {disease_choice}")
+
+    sim_results = run_epidemic_simulation(
+        population=population,
+        initial_cases=initial_cases,
+        transmission_rate=transmission_rate,
+        incubation_days=incubation_days,
+        recovery_days=recovery_days,
+        hospitalization_rate=hospitalization_rate,
+        days=days
+    )
+
+    peak_infected_count = int(np.max(sim_results['infected']))
+
+    fig1, ax1 = plt.subplots()
+    ax1.plot(sim_results['days'], sim_results['susceptible'],
+             label='Susceptible', color='blue')
+    ax1.plot(sim_results['days'], sim_results['exposed'],
+             label='Exposed', color='orange')
+    ax1.plot(sim_results['days'], sim_results['infected'],
+             label='Infected', color='red')
+    ax1.plot(sim_results['days'], sim_results['hospitalized'],
+             label='Hospitalized', color='purple')
+    ax1.plot(sim_results['days'], sim_results['recovered'],
+             label='Recovered', color='green')
+    ax1.set_xlabel('Days')
+    ax1.set_ylabel('People')
+    ax1.legend()
+    st.pyplot(fig1)
 
 # Module 2 Sidebar Setup
 st.sidebar.subheader("Module 2: Live Market Portfolio")
@@ -49,22 +83,37 @@ num_shares = st.sidebar.number_input(
 col1, col2, col3 = st.columns(3)
 
 # Module 1 Execution
+# Module 1 Execution
 with col1:
     st.subheader(f"Outbreak Dynamics: {disease_choice}")
-    t, y = run_sir_model_advanced(
-        beta=beta, gamma=gamma, population=population, days=days)
-    peak_infected_count = int(max(y[1]))
+
+    sim_results = run_epidemic_simulation(
+        population=population,
+        initial_cases=initial_cases,
+        transmission_rate=transmission_rate,
+        incubation_days=incubation_days,
+        recovery_days=recovery_days,
+        hospitalization_rate=hospitalization_rate,
+        days=days
+    )
+
+    peak_infected_count = int(np.max(sim_results['infected']))
 
     fig1, ax1 = plt.subplots()
-    ax1.plot(t, y[0], label='Susceptible', color='blue')
-    ax1.plot(t, y[1], label='Infected', color='red')
-    ax1.plot(t, y[2], label='Recovered', color='green')
+    ax1.plot(sim_results['days'], sim_results['susceptible'],
+             label='Susceptible', color='blue')
+    ax1.plot(sim_results['days'], sim_results['exposed'],
+             label='Exposed', color='orange')
+    ax1.plot(sim_results['days'], sim_results['infected'],
+             label='Infected', color='red')
+    ax1.plot(sim_results['days'], sim_results['hospitalized'],
+             label='Hospitalized', color='purple')
+    ax1.plot(sim_results['days'], sim_results['recovered'],
+             label='Recovered', color='green')
     ax1.set_xlabel('Days')
     ax1.set_ylabel('People')
     ax1.legend()
     st.pyplot(fig1)
-    st.metric(label="Projected Peak Infections",
-              value=f"{peak_infected_count:,} people")
 
 # Module 2 Execution
 with col2:
