@@ -5,33 +5,38 @@ from streamlit_folium import st_folium
 def generate_resource_map(vaccines, beds, treatments):
     """
     Generates an interactive map distributing optimized resources 
-    across sample regional hospital centers.
+    across real regional hospital facilities in Durham Region.
     """
-    # Sample coordinates for regional medical centers (e.g., Metro Area)
+    # Real health system nodes with bed-capacity weighting
     hospitals = [
-        {"name": "Central General Hospital",
-            "lat": 40.7128, "lon": -74.0060, "share": 0.50},
-        {"name": "Northside Health Center", "lat": 40.7831,
-            "lon": -73.9712, "share": 0.30},
-        {"name": "East Regional Clinic", "lat": 40.7484,
-            "lon": -73.9857, "share": 0.20},
+        {"name": "Lakeridge Health Oshawa", "lat": 43.9033,
+            "lon": -78.8683, "capacity_share": 0.45},
+        {"name": "Ajax Pickering Hospital", "lat": 43.8369,
+            "lon": -79.0169, "capacity_share": 0.25},
+        {"name": "Lakeridge Health Whitby", "lat": 43.8765,
+            "lon": -78.9430, "capacity_share": 0.15},
+        {"name": "Lakeridge Health Bowmanville", "lat": 43.9100,
+            "lon": -78.6800, "capacity_share": 0.15},
     ]
 
-    # Initialize map centered on the region
-    m = folium.Map(location=[40.75, -73.98],
-                   zoom_start=12, tiles="OpenStreetMap")
+    # Center map on Durham Region
+    m = folium.Map(location=[43.88, -78.90],
+                   zoom_start=11, tiles="OpenStreetMap")
 
-    # Place interactive markers for each facility
     for h in hospitals:
-        alloc_v = int(vaccines * h["share"])
-        alloc_b = int(beds * h["share"])
-        alloc_t = int(treatments * h["share"])
+        alloc_v = int(vaccines * h["capacity_share"])
+        alloc_b = int(beds * h["capacity_share"])
+        alloc_t = int(treatments * h["capacity_share"])
 
         popup_text = f"""
-        <b>{h['name']}</b><br>
-        • Vaccines Allocated: {alloc_v:,}<br>
-        • ICU Beds Allocated: {alloc_b:,}<br>
-        • Treatments Allocated: {alloc_t:,}
+        <div style="font-family: Arial; width: 200px;">
+            <h4>{h['name']}</h4>
+            <hr>
+            <b>Allocated Medical Assets:</b><br>
+            • <b>Vaccines:</b> {alloc_v:,} doses<br>
+            • <b>ICU Beds:</b> {alloc_b:,} units<br>
+            • <b>Treatments:</b> {alloc_t:,} doses
+        </div>
         """
 
         folium.Marker(
@@ -39,7 +44,10 @@ def generate_resource_map(vaccines, beds, treatments):
             popup=popup_text,
             tooltip=h["name"],
             icon=folium.Icon(
-                color="red" if h["share"] >= 0.4 else "blue", icon="hospital", prefix="fa")
+                color="red" if h["capacity_share"] >= 0.4 else "blue",
+                icon="hospital-o",
+                prefix="fa"
+            )
         ).add_to(m)
 
     return m
