@@ -164,9 +164,24 @@ with tab1:
             "Lakeridge Health Bowmanville"
         ],
         "Capacity Share": ["45%", "25%", "15%", "15%"],
-        "Vaccine Doses": [int(total_vaccines * 0.45), int(total_vaccines * 0.25), int(total_vaccines * 0.15), int(total_vaccines * 0.15)],
-        "ICU Beds Allocated": [int(total_beds * 0.45), int(total_beds * 0.25), int(total_beds * 0.15), int(total_beds * 0.15)],
-        "Treatments Allocated": [int(total_treatments * 0.45), int(total_treatments * 0.25), int(total_treatments * 0.15), int(total_treatments * 0.15)]
+        "Vaccine Doses": [
+            int(total_vaccines * 0.45),
+            int(total_vaccines * 0.25),
+            int(total_vaccines * 0.15),
+            int(total_vaccines * 0.15)
+        ],
+        "ICU Beds Allocated": [
+            int(total_beds * 0.45),
+            int(total_beds * 0.25),
+            int(total_beds * 0.15),
+            int(total_beds * 0.15)
+        ],
+        "Treatments Allocated": [
+            int(total_treatments * 0.45),
+            int(total_treatments * 0.25),
+            int(total_treatments * 0.15),
+            int(total_treatments * 0.15)
+        ]
     }
 
     report_df = pd.DataFrame(report_data)
@@ -177,7 +192,8 @@ with tab1:
         label="📥 Download Allocation Plan (CSV)",
         data=csv_bytes,
         file_name="bioecon_resource_allocation_plan.csv",
-        mime="text/csv"
+        mime="text/csv",
+        key="tab1_download_csv_btn"
     )
 
     st.header("3. Regional Asset Deployment Map")
@@ -187,7 +203,7 @@ with tab1:
         treatments=total_treatments,
         peak_hospitalized=sim_results['peak_hospitalizations']
     )
-    st_folium(map_obj, width=1100, height=500)
+    st_folium(map_obj, width="stretch", height=500)
 
 # ---------------------------------------------------------------------
 # TAB 2: STRESS TESTING & SENSITIVITY ANALYSIS
@@ -365,7 +381,7 @@ if result["success"]:
         label="📥 Download Allocation Plan (CSV)",
         data=csv_bytes,
         file_name="bioecon_resource_allocation_plan.csv",
-        mime="text/csv"
+        mime="text/csv",
         key="main_dowload_btn"
     )
 if result["success"]:
