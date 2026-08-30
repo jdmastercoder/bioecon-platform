@@ -1,4 +1,7 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+import streamlit as st
 import matplotlib.pyplot as plt
 from health_engine import run_sir_model_advanced, fetch_disease_preset
 from finance_engine import run_monte_carlo_live
@@ -147,7 +150,7 @@ if result["success"]:
     report_df = pd.DataFrame(report_data)
 
     # Display table in dashboard
-    st.dataframe(report_df, use_container_width=True)
+    st.dataframe(report_df, width="stretch")
 
     # Generate CSV download button
     csv_bytes = report_df.to_csv(index=False).encode('utf-8')
