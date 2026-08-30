@@ -110,7 +110,53 @@ with col3:
 st.divider()
 st.subheader("Geospatial Resource Distribution Map")
 st.caption("Visualizing real-time regional deployment of optimized medical assets based on local facility capacity.")
+# Insert after Module 3 allocation results in app.py:
 
+if result["success"]:
+    st.subheader("Export Optimization Report")
+
+    # Create structured data dictionary
+    report_data = {
+        "Facility": [
+            "Lakeridge Health Oshawa",
+            "Lakeridge Health Ajax Pickering",
+            "Lakeridge Health Whitby",
+            "Lakeridge Health Bowmanville"
+        ],
+        "Capacity Share": ["45%", "25%", "15%", "15%"],
+        "Vaccine Doses": [
+            int(result["vaccines"] * 0.45),
+            int(result["vaccines"] * 0.25),
+            int(result["vaccines"] * 0.15),
+            int(result["vaccines"] * 0.15)
+        ],
+        "ICU Beds Allocated": [
+            int(result["icu_beds"] * 0.45),
+            int(result["icu_beds"] * 0.25),
+            int(result["icu_beds"] * 0.15),
+            int(result["icu_beds"] * 0.15)
+        ],
+        "Treatments Allocated": [
+            int(result["treatments"] * 0.45),
+            int(result["treatments"] * 0.25),
+            int(result["treatments"] * 0.15),
+            int(result["treatments"] * 0.15)
+        ]
+    }
+
+    report_df = pd.DataFrame(report_data)
+
+    # Display table in dashboard
+    st.dataframe(report_df, use_container_width=True)
+
+    # Generate CSV download button
+    csv_bytes = report_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Allocation Plan (CSV)",
+        data=csv_bytes,
+        file_name="bioecon_resource_allocation_plan.csv",
+        mime="text/csv"
+    )
 if result["success"]:
     m = generate_resource_map(
         vaccines=result["vaccines"],
