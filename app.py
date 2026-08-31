@@ -43,6 +43,11 @@ elif disease_choice == "Measles":
 else:
     default_beta, default_inc, default_rec, default_hosp = 0.35, 5, 14, 5.0
 
+transmission_rate = st.sidebar.slider(
+    "Transmission Rate (Beta)", 0.0, 1.0, default_beta, 0.01,
+    key="main_beta",
+    help="Represents the average number of adequate contacts per unit time that lead to transmission."
+)
 population = st.sidebar.number_input(
     "Total Population", value=500000, step=10000, key="main_population")
 initial_cases = st.sidebar.number_input(

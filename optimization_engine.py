@@ -1,47 +1,47 @@
 import numpy as np
-from scipy.optimize import linprog
+from scipy.optimize import milp, LinearConstraint, Bounds
 
 
-def optimize_resources(total_budget, peak_infected):
+def optimize_resources_milp(total_budget, peak_infected, unit_costs=None):
     """
-    Optimizes allocation between 3 resources:
-    x0: Vaccines ($50 each, saves 0.8 lives on average)
-    x1: ICU Beds ($500 each, saves 0.9 lives on average)
-    x2: Antiviral Treatments ($150 each, saves 0.6 lives on average)
+    Mixed-Integer Linear Programming (MILP) Solver.
+    Forces integer constraints on physical assets while maximizing lives saved.
     """
-    # Costs per unit
-    costs = [50, 500, 150]
+    if unit_costs is None:
+        unit_costs = {"vaccines": 25.0, "beds": 1200.0, "treatments": 150.0}
 
-    # Impact coefficients (negative because linprog minimizes)
-    # Minimizing -lives_saved is equivalent to maximizing lives_saved
-    c = [-0.8, -0.9, -0.6]
+    # Decision Variables Vector: x = [Vaccines, Beds, Treatments]
+    # Objective: Maximize Lives Saved (Linear coefficients: [0.001, 0.25, 0.05])
+    # SciPy minimizes, so negate objective vector c
+    c = np.array([-0.001, -0.25, -0.05])
 
-    # Inequality Constraint: Total Cost <= Total Budget
-    A_ub = [costs]
-    b_ub = [total_budget]
+    # Budget Constraint: 25*V + 1200*B + 150*T <= total_budget
+    A_budget = np.array(
+        [[unit_costs["vaccines"], unit_costs["beds"], unit_costs["treatments"]]])
+    budget_constraint = LinearConstraint(A_budget, ub=[total_budget])
 
-    # Bounds for each resource: (min_units, max_units)
-    # Require at least 100 vaccines, up to peak_infected estimate
-    bounds = [
-        (100, max(500, int(peak_infected * 1000))),  # Vaccines
-        (10, 500),                                   # ICU Beds
-        (50, int(peak_infected * 500))               # Treatments
-    ]
+    # Integer Variables Mask: 1 indicates integer constraint (MILP)
+    integrality = np.array([1, 1, 1])
 
-    # Run Linear Programming Solver
-    res = linprog(c, A_ub=A_ub, b_ub=b_ub, bounds=bounds, method='highs')
+    # Non-negative bounds
+    bounds = Bounds(lb=[0, 0, 0], ub=[np.inf, np.inf, np.inf])
+
+    # Solve MILP
+    res = milp(c=c, integrality=integrality, bounds=bounds,
+               constraints=budget_constraint)
 
     if res.success:
-        vaccines, icu_beds, treatments = res.x
-        lives_saved = -res.fun
-        total_spent = sum(x * cost for x, cost in zip(res.x, costs))
+        v, b, t = res.x
+        lives_saved = int(-res.fun)
+        total_spent = float(
+            v * unit_costs["vaccines"] + b * unit_costs["beds"] + t * unit_costs["treatments"])
         return {
             "success": True,
-            "vaccines": int(vaccines),
-            "icu_beds": int(icu_beds),
-            "treatments": int(treatments),
-            "lives_saved": int(lives_saved),
-            "total_spent": round(total_spent, 2)
+            "vaccines": int(v),
+            "icu_beds": int(b),
+            "treatments": int(t),
+            "lives_saved": lives_saved,
+            "total_spent": total_spent
         }
     else:
         return {"success": False}
