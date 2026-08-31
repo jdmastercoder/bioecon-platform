@@ -1,5 +1,7 @@
 # BioEcon Risk & Resource Allocation Platform
 
+![Python Testing Pipeline](https://github.com/jdmastercoder/bioecon-platform/actions/workflows/pytest.yml/badge.svg)
+
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://bioecon-platform-8cfuamypfxjgndkhkhybzc.streamlit.app/)
 
 🔗 **Live Interactive App:** [bioecon-platform.streamlit.app](https://bioecon-platform-8cfuamypfxjgndkhkhybzc.streamlit.app/)
