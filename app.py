@@ -2,10 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
 from health_engine import run_epidemic_simulation
 from finance_engine import run_monte_carlo_live
 from optimization_engine import optimize_resources
 from map_engine import generate_resource_map
+from report_engine import generate_pdf_report
 from streamlit_folium import st_folium
 
 # ---------------------------------------------------------------------
@@ -21,23 +23,38 @@ st.title("BioEcon Risk & Resource Allocation Platform")
 st.markdown("Integrated epidemiological modeling, financial risk estimation, and geospatial resource distribution.")
 
 # ---------------------------------------------------------------------
-# SIDEBAR CONTROLS (Single global setup with unique keys)
+# SIDEBAR CONTROLS (Unified Pathogen Presets & Settings)
 # ---------------------------------------------------------------------
 st.sidebar.header("Epidemic Parameters (SEIR-H)")
+
 disease_choice = st.sidebar.selectbox(
-    "Select Pathogen", ["COVID-19", "Influenza", "Custom"], key="disease_choice")
+    "Select Pathogen Preset",
+    ["COVID-19 (Omicron)", "Seasonal Influenza", "Measles", "Custom"],
+    key="main_pathogen_preset"
+)
+
+# Pathogen Presets Dynamic Baselines
+if disease_choice == "COVID-19 (Omicron)":
+    default_beta, default_inc, default_rec, default_hosp = 0.65, 3, 7, 3.0
+elif disease_choice == "Seasonal Influenza":
+    default_beta, default_inc, default_rec, default_hosp = 0.35, 2, 5, 1.5
+elif disease_choice == "Measles":
+    default_beta, default_inc, default_rec, default_hosp = 0.90, 10, 14, 10.0
+else:
+    default_beta, default_inc, default_rec, default_hosp = 0.35, 5, 14, 5.0
+
 population = st.sidebar.number_input(
     "Total Population", value=500000, step=10000, key="main_population")
 initial_cases = st.sidebar.number_input(
     "Initial Cases", value=10, step=1, key="main_initial_cases")
 transmission_rate = st.sidebar.slider(
-    "Transmission Rate (Beta)", 0.0, 1.0, 0.35, 0.01, key="main_beta")
+    "Transmission Rate (Beta)", 0.0, 1.0, default_beta, 0.01, key="main_beta")
 incubation_days = st.sidebar.slider(
-    "Incubation Period (Days)", 1, 14, 5, 1, key="main_incubation")
+    "Incubation Period (Days)", 1, 14, default_inc, 1, key="main_incubation")
 recovery_days = st.sidebar.slider(
-    "Recovery Period (Days)", 1, 30, 14, 1, key="main_recovery")
+    "Recovery Period (Days)", 1, 30, default_rec, 1, key="main_recovery")
 hospitalization_rate = st.sidebar.slider(
-    "Hospitalization Rate (%)", 0.0, 20.0, 5.0, 0.5, key="main_hosp_rate") / 100.0
+    "Hospitalization Rate (%)", 0.0, 20.0, default_hosp, 0.5, key="main_hosp_rate") / 100.0
 days = 90
 
 st.sidebar.header("Market Risk Inputs")
@@ -55,7 +72,7 @@ total_treatments = st.sidebar.number_input(
     "Available Treatments", value=25000, step=1000, key="main_treatments")
 
 # ---------------------------------------------------------------------
-# TABS INTEGRATION
+# TABS NAVIGATION
 # ---------------------------------------------------------------------
 tab1, tab2 = st.tabs(["📊 Main Allocation Dashboard",
                      "🧪 Stress Testing & Sensitivity"])
@@ -145,10 +162,9 @@ with tab1:
 
     st.divider()
 
-    # --- SECTION 2: SINGLE UNIFIED ALLOCATION REPORT ---
+    # --- SECTION 2: UNIFIED ALLOCATION REPORT ---
     st.header("2. Optimized Resource Allocation Plan")
 
-    # Use optimizer values if optimization succeeded, otherwise fall back to sidebar constraints
     if result["success"]:
         alloc_v = result["vaccines"]
         alloc_b = result["icu_beds"]
@@ -174,14 +190,29 @@ with tab1:
     report_df = pd.DataFrame(report_data)
     st.dataframe(report_df, width="stretch")
 
-    csv_bytes = report_df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="📥 Download Allocation Plan (CSV)",
-        data=csv_bytes,
-        file_name="bioecon_resource_allocation_plan.csv",
-        mime="text/csv",
-        key="main_tab_download_csv"
-    )
+    # Export Controls (CSV and PDF)
+    exp_col1, exp_col2 = st.columns(2)
+
+    with exp_col1:
+        csv_bytes = report_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Allocation Plan (CSV)",
+            data=csv_bytes,
+            file_name="bioecon_resource_allocation_plan.csv",
+            mime="text/csv",
+            key="main_tab_download_csv"
+        )
+
+    with exp_col2:
+        pdf_bytes = generate_pdf_report(
+            disease_choice, sim_results, alloc_v, alloc_b, alloc_t)
+        st.download_button(
+            label="📄 Download Executive Brief (PDF)",
+            data=pdf_bytes,
+            file_name="bioecon_executive_summary.pdf",
+            mime="application/pdf",
+            key="main_tab_download_pdf"
+        )
 
     st.divider()
 
