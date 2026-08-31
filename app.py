@@ -24,6 +24,28 @@ st.title("BioEcon Risk & Resource Allocation Platform")
 st.markdown("Integrated epidemiological modeling, financial risk estimation, and geospatial resource distribution.")
 
 # ---------------------------------------------------------------------
+# MATHEMATICAL FORMULATION EXPANDER
+# ---------------------------------------------------------------------
+with st.expander("📖 View Mathematical Formulation & Governing Equations"):
+    st.markdown("### 1. SEIR-H Deterministic Differential Equations (ODEs)")
+    st.latex(r"\frac{dS}{dt} = -\frac{\beta S I}{N}")
+    st.latex(r"\frac{dE}{dt} = \frac{\beta S I}{N} - \sigma E")
+    st.latex(r"\frac{dI}{dt} = \sigma E - \gamma I")
+    st.latex(r"\frac{dH}{dt} = \eta \sigma E - \omega H")
+    st.latex(r"\frac{dR}{dt} = (1-\eta)\gamma I + \omega H")
+
+    st.markdown("### 2. Stochastic Differential Equation (SDE) Formulation")
+    st.latex(r"dI_t = (\beta S_t I_t - \gamma I_t)dt + \sigma_I I_t dW_t")
+    st.caption(
+        "Integrated numerically using the Euler-Maruyama scheme where $dW_t \sim \mathcal{N}(0, \sqrt{dt})$.")
+
+    st.markdown("### 3. Mixed-Integer Linear Programming (MILP) Formulation")
+    st.latex(
+        r"\max_{x \in \mathbb{Z}^+} \quad c^T x \quad \text{subject to} \quad A x \le b")
+
+st.divider()
+
+# ---------------------------------------------------------------------
 # SIDEBAR CONTROLS (Unified Pathogen Presets & Settings)
 # ---------------------------------------------------------------------
 st.sidebar.header("Epidemic Parameters (SEIR-H)")
