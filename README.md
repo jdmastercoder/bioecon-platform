@@ -1,5 +1,9 @@
 # BioEcon Risk & Resource Allocation Platform
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://bioecon-platform-8cfuamypfxjgndkhkhybzc.streamlit.app/)
+
+🔗 **Live Interactive App:** [bioecon-platform.streamlit.app](https://bioecon-platform-8cfuamypfxjgndkhkhybzc.streamlit.app/)
+
 An open-source quantitative decision-support engine combining computational epidemiology, live financial market risk modeling, and linear optimization to solve complex medical supply chain allocation problems.
 
 ---
