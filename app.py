@@ -4,8 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from health_engine import run_epidemic_simulation
+from stochastic_health_engine import run_stochastic_seir_h
 from finance_engine import run_monte_carlo_live
-from optimization_engine import optimize_resources
+from optimization_engine import optimize_resources, optimize_resources_milp
 from map_engine import generate_resource_map
 from report_engine import generate_pdf_report
 from streamlit_folium import st_folium
@@ -43,17 +44,17 @@ elif disease_choice == "Measles":
 else:
     default_beta, default_inc, default_rec, default_hosp = 0.35, 5, 14, 5.0
 
+population = st.sidebar.number_input(
+    "Total Population", value=500000, step=10000, key="main_population")
+initial_cases = st.sidebar.number_input(
+    "Initial Cases", value=10, step=1, key="main_initial_cases")
+
 transmission_rate = st.sidebar.slider(
     "Transmission Rate (Beta)", 0.0, 1.0, default_beta, 0.01,
     key="main_beta",
     help="Represents the average number of adequate contacts per unit time that lead to transmission."
 )
-population = st.sidebar.number_input(
-    "Total Population", value=500000, step=10000, key="main_population")
-initial_cases = st.sidebar.number_input(
-    "Initial Cases", value=10, step=1, key="main_initial_cases")
-transmission_rate = st.sidebar.slider(
-    "Transmission Rate (Beta)", 0.0, 1.0, default_beta, 0.01, key="main_beta")
+
 incubation_days = st.sidebar.slider(
     "Incubation Period (Days)", 1, 14, default_inc, 1, key="main_incubation")
 recovery_days = st.sidebar.slider(
@@ -79,14 +80,16 @@ total_treatments = st.sidebar.number_input(
 # ---------------------------------------------------------------------
 # TABS NAVIGATION
 # ---------------------------------------------------------------------
-tab1, tab2 = st.tabs(["📊 Main Allocation Dashboard",
-                     "🧪 Stress Testing & Sensitivity"])
+tab1, tab2, tab3 = st.tabs([
+    "📊 Main Allocation Dashboard",
+    "🧪 Stress Testing & Sensitivity",
+    "🔬 Advanced SDE & MILP Engine"
+])
 
 # =====================================================================
 # TAB 1: MAIN DASHBOARD
 # =====================================================================
 with tab1:
-    # --- SECTION 1: EPIDEMIOLOGY, FINANCE & OPTIMIZATION MODULES ---
     col1, col2, col3 = st.columns(3)
 
     # Module 1: Outbreak Dynamics
@@ -140,7 +143,7 @@ with tab1:
             st.pyplot(fig2)
         else:
             st.error("Error fetching market data.")
-            portfolio_value = 100000  # Fallback budget
+            portfolio_value = 100000
 
     # Module 3: Resource Allocation Solver
     with col3:
@@ -167,7 +170,7 @@ with tab1:
 
     st.divider()
 
-    # --- SECTION 2: UNIFIED ALLOCATION REPORT ---
+    # SECTION 2: UNIFIED ALLOCATION REPORT
     st.header("2. Optimized Resource Allocation Plan")
 
     if result["success"]:
@@ -195,7 +198,6 @@ with tab1:
     report_df = pd.DataFrame(report_data)
     st.dataframe(report_df, width="stretch")
 
-    # Export Controls (CSV and PDF)
     exp_col1, exp_col2 = st.columns(2)
 
     with exp_col1:
@@ -221,7 +223,7 @@ with tab1:
 
     st.divider()
 
-    # --- SECTION 3: GEOSPATIAL MAP VISUALIZATION ---
+    # SECTION 3: GEOSPATIAL MAP VISUALIZATION
     st.header("3. Regional Asset Deployment Map")
     st.caption(
         "Visualizing real-time regional deployment of optimized medical assets based on local facility capacity.")
@@ -245,7 +247,6 @@ with tab2:
     beta_multiplier = st.slider(
         "Transmission Surge Multiplier", 0.5, 2.0, 1.2, 0.1, key="tab2_beta_mult")
 
-    # Run Baseline vs Surge Simulation
     sim_baseline = sim_results
     sim_surge = run_epidemic_simulation(
         population=population,
@@ -282,3 +283,69 @@ with tab2:
     else:
         st.success(
             f"✅ **Capacity Buffer:** Regional bed capacity holds a surplus buffer of **{abs(icu_deficit):,} beds** under this scenario.")
+
+# =====================================================================
+# TAB 3: ADVANCED STOCHASTIC & MILP MODELING
+# =====================================================================
+with tab3:
+    st.header("Stochastic Differential Equations & MILP Integer Optimization")
+    st.markdown(
+        "This research module runs **Euler-Maruyama SDE integration** over multiple Monte Carlo paths "
+        "to calculate 95% confidence bounds on infection trajectories, paired with a **Mixed-Integer Linear Program (MILP)**."
+    )
+
+    sde_col1, sde_col2 = st.columns(2)
+    with sde_col1:
+        num_runs = st.slider("Monte Carlo Stochastic Runs",
+                             10, 100, 30, 5, key="tab3_sde_runs")
+    with sde_col2:
+        noise_level = st.slider(
+            "Wiener Process Noise Intensity (σ)", 0.0, 0.1, 0.02, 0.005, key="tab3_noise")
+
+    stoch_res = run_stochastic_seir_h(
+        population=population,
+        initial_cases=initial_cases,
+        transmission_rate=transmission_rate,
+        incubation_days=incubation_days,
+        recovery_days=recovery_days,
+        hospitalization_rate=hospitalization_rate,
+        days=days,
+        noise_intensity=noise_level,
+        runs=num_runs
+    )
+
+    fig_sde, ax_sde = plt.subplots(figsize=(10, 4))
+    ax_sde.plot(stoch_res["time"], stoch_res["infected_mean"],
+                color="red", label="Mean Active Infections")
+    ax_sde.fill_between(
+        stoch_res["time"],
+        stoch_res["infected_lower"],
+        stoch_res["infected_upper"],
+        color="red",
+        alpha=0.2,
+        label="95% Confidence Interval (SDE Noise)"
+    )
+    ax_sde.set_xlabel("Days")
+    ax_sde.set_ylabel("Infected Population")
+    ax_sde.set_title("Stochastic Infection Trajectory (Euler-Maruyama SDE)")
+    ax_sde.legend()
+    st.pyplot(fig_sde)
+
+    st.divider()
+
+    st.subheader("Mixed-Integer Linear Programming (MILP) Asset Solver")
+    milp_res = optimize_resources_milp(
+        total_budget=portfolio_value, peak_infected=transmission_rate)
+
+    if milp_res["success"]:
+        milp_c1, milp_c2, milp_c3, milp_c4 = st.columns(4)
+        milp_c1.metric("Optimal Vaccines (Integer)",
+                       f"{milp_res['vaccines']:,} doses")
+        milp_c2.metric("Optimal ICU Beds (Integer)",
+                       f"{milp_res['icu_beds']:,} units")
+        milp_c3.metric("Optimal Antivirals (Integer)",
+                       f"{milp_res['treatments']:,} doses")
+        milp_c4.metric("MILP Projected Lives Saved",
+                       f"{milp_res['lives_saved']:,}")
+    else:
+        st.error("MILP optimization failed to converge within constraints.")
